@@ -1,0 +1,23 @@
+venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# Raw data files are large — not committed to git
+data/raw/*.csv
+data/raw/*.json
+data/raw/*.zip
+data/processed/*.csv
+
+# Models can be large
+models/*.onnx
+models/*.pkl
+models/*.joblib
+
+# Keep folder structure with .gitkeep
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!models/.gitkeep
+
+.env
+.DS_Store
