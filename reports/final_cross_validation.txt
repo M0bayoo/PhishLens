@@ -1,0 +1,6 @@
+PhishLens FINAL Model - 5-Fold Cross-Validation
+==================================================
+Decision threshold (P_phishing>=): 0.5
+CV Accuracy: 0.9977
+CV F1      : 0.9979
+CV ROC-AUC : 0.9995

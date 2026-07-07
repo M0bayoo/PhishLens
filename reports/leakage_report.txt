@@ -1,0 +1,73 @@
+==================================================================
+PhishLens - Data Leakage & Model Honesty Check
+==================================================================
+
+Total rows: 246,618  |  features: 93
+  phiusiil rows: 235,795
+  fresh rows   : 10,823
+
+------------------------------------------------------------------
+[CHECK 1] Single-feature leakage
+------------------------------------------------------------------
+A feature that alone scores >0.95 accuracy is a leakage suspect.
+
+Top 12 features by |correlation| with label:
+  URLSimilarityIndex               |r| = 0.830
+  HasSocialNet                     |r| = 0.754
+  HasCopyrightInfo                 |r| = 0.713
+  HasDescription                   |r| = 0.665
+  IsHTTPS                          |r| = 0.591
+  DomainTitleMatchScore            |r| = 0.568
+  HasSubmitButton                  |r| = 0.558
+  IsResponsive                     |r| = 0.528
+  SpacialCharRatioInURL            |r| = 0.519
+  URLTitleMatchScore               |r| = 0.515
+  HasHiddenFields                  |r| = 0.491
+  HasFavicon                       |r| = 0.478
+
+Single-feature accuracy (decision stump) for top 5:
+  URLSimilarityIndex               acc = 0.977  <-- near-perfect ALONE
+  HasSocialNet                     acc = 0.861
+  HasCopyrightInfo                 acc = 0.847
+  HasDescription                   acc = 0.814
+  IsHTTPS                          acc = 0.779
+
+------------------------------------------------------------------
+[CHECK 2] Source memorisation
+------------------------------------------------------------------
+
+2a. Can the model identify which DATASET a row came from?
+   Source-identification accuracy: 1.000
+   -> Features STRONGLY encode source. Leakage risk is real:
+      the model can tell datasets apart, so it may be using
+      source as a proxy for the label.
+
+2b. Cross-source generalisation (train on one, test on other):
+   train phiusiil  -> test fresh    : acc 0.554 f1 0.713  [COLLAPSES -> was memorising]
+   train fresh     -> test phiusiil : acc 0.572 f1 0.728  [COLLAPSES -> was memorising]
+
+------------------------------------------------------------------
+[CHECK 3] Honest baseline: fresh PhishTank/Tranco data ONLY
+------------------------------------------------------------------
+
+Fresh-only usable features (non-empty): 43 of 93
+  Accuracy on fresh-only data: 0.9972
+  F1 on fresh-only data      : 0.9975
+  (This is the most honest estimate of real-world performance,
+   since fresh data has no phiusiil-vs-fresh structure to exploit.)
+
+Correlation plot saved -> reports/feature_label_correlation.png
+
+==================================================================
+SUMMARY
+==================================================================
+  Single-feature leakage suspects (|r|>0.9): 0
+  Source-identification accuracy           : 1.000
+  Fresh-only honest accuracy               : 0.9972
+
+  Interpret:
+  - If suspects=0, source-id is low, cross-source generalises,
+    and fresh-only stays high -> your 0.9999 is likely GENUINE.
+  - If source-id is high AND cross-source collapses -> the merged
+    accuracy is inflated by source structure; report fresh-only instead.
+==================================================================

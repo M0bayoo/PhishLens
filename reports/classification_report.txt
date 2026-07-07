@@ -1,0 +1,22 @@
+PhishLens Random Forest - Evaluation Report
+==================================================
+Accuracy  : 0.9999
+Precision : 0.9999
+Recall    : 1.0000
+F1 Score  : 0.9999
+ROC-AUC   : 1.0000
+
+Confusion Matrix:
+[[21151     3]
+ [    0 28170]]
+
+Classification Report:
+                precision    recall  f1-score   support
+
+  Phishing (0)       1.00      1.00      1.00     21154
+Legitimate (1)       1.00      1.00      1.00     28170
+
+      accuracy                           1.00     49324
+     macro avg       1.00      1.00      1.00     49324
+  weighted avg       1.00      1.00      1.00     49324
+

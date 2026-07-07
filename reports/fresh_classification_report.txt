@@ -1,0 +1,21 @@
+PhishLens Fresh-Only Model - Evaluation
+=============================================
+Accuracy  : 0.9972
+Precision : 0.9950
+Recall    : 1.0000
+F1 Score  : 0.9975
+ROC-AUC   : 0.9999
+
+Confusion Matrix:
+[[ 959    6]
+ [   0 1200]]
+
+                precision    recall  f1-score   support
+
+  Phishing (0)       1.00      0.99      1.00       965
+Legitimate (1)       1.00      1.00      1.00      1200
+
+      accuracy                           1.00      2165
+     macro avg       1.00      1.00      1.00      2165
+  weighted avg       1.00      1.00      1.00      2165
+

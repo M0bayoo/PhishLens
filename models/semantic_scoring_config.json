@@ -1,0 +1,31 @@
+{
+  "model": "all-MiniLM-L6-v2",
+  "top_k": 3,
+  "margin_floor": 0.05,
+  "margin_ceil": 0.32,
+  "rule": "risk = clip((topk_mean(phish_sims) - topk_mean(legit_sims) - margin_floor) / (margin_ceil - margin_floor), 0, 1)",
+  "obfuscation_watchwords": [
+    "account",
+    "verify",
+    "password",
+    "login",
+    "security",
+    "bank",
+    "confirm",
+    "update",
+    "suspend",
+    "billing"
+  ],
+  "obfuscation_substitutions": {
+    "o": "0",
+    "i": "1!",
+    "l": "1",
+    "e": "3",
+    "a": "4@",
+    "s": "5$",
+    "t": "7",
+    "b": "8"
+  },
+  "obfuscation_boost": 0.35,
+  "obfuscation_rule": "if disguised watchword found (char-substitution or letter-spacing), add obfuscation_boost to risk, capped at 1.0"
+}

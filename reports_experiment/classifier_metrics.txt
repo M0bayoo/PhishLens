@@ -1,0 +1,23 @@
+Trained Classifier - Held-out Evaluation
+=============================================
+Accuracy: 0.8726
+Precision: 0.7474
+Recall: 0.8726
+F1: 0.8052
+ROC-AUC: 0.9491
+
+Confusion Matrix:
+[[1665  243]
+ [ 105  719]]
+
+              precision    recall  f1-score   support
+
+   Legit (0)       0.94      0.87      0.91      1908
+Phishing (1)       0.75      0.87      0.81       824
+
+    accuracy                           0.87      2732
+   macro avg       0.84      0.87      0.86      2732
+weighted avg       0.88      0.87      0.88      2732
+
+
+Cross-validated: CV Acc=0.8821 CV F1=0.8187

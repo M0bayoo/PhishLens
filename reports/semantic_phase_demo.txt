@@ -1,0 +1,27 @@
+PhishLens Phase 1 v2 - Contrastive Semantic Demo
+=======================================================
+Model: all-MiniLM-L6-v2 | top_k=3 | margin range [0.05, 0.32]
+Phishing prototypes: 75 in 13 categories
+Legit anchors: 43
+
+PHISHING | risk=0.87 base=0.87 margin=+0.284 | tactic=urgency / account threat | Your account has been suspended due to unusual activity
+PHISHING | risk=0.60 base=0.60 margin=+0.213 | tactic=security alert impersonation | Security alert: we detected a suspicious login attempt.
+PHISHING | risk=0.94 base=0.94 margin=+0.303 | tactic=payment / billing | Your payment could not be processed. Update your billin
+PHISHING | risk=0.42 base=0.42 margin=+0.165 | tactic=fake delivery / parcel | Your parcel is on hold. Pay a small customs fee now to 
+PHISHING | risk=0.64 base=0.64 margin=+0.223 | tactic=prize / lottery lure | Congratulations! You have been selected for a cash priz
+LEGIT | risk=0.00 base=0.00 margin=-0.203 | tactic=fake delivery / parcel | Welcome to our online bookstore. Browse thousands of ti
+LEGIT | risk=0.00 base=0.00 margin=-0.284 | tactic=credential harvesting | This guide explains how to set up your development envi
+LEGIT | risk=0.00 base=0.00 margin=-0.246 | tactic=hr / payroll scam | Contact our support team Monday to Friday. We aim to re
+LEGIT | risk=0.35 base=0.00 margin=-0.206 | tactic=credential harvesting  [OBFUSCATION: 'log in' -> login, letter-spacing] | Log in to view your account balance and recent transact
+BENIGN? | risk=0.25 base=0.25 margin=+0.118 | tactic=coercion / extortion / threat | can you send the money now?
+BENIGN? | risk=0.00 base=0.00 margin=+0.016 | tactic=urgency / account threat | what are your account details?
+BENIGN? | risk=0.00 base=0.00 margin=-0.048 | tactic=payment / billing | send your details
+PHISHING | risk=0.13 base=0.13 margin=+0.086 | tactic=credential harvesting | click the link and input your password and username imm
+COERCION | risk=0.57 base=0.57 margin=+0.204 | tactic=coercion / extortion / threat | i will block you now if you dont make payment i asked y
+COERCION | risk=0.68 base=0.68 margin=+0.235 | tactic=coercion / extortion / threat | i will block you now if you dont make payment i asked y
+BENIGN? | risk=0.00 base=0.00 margin=-0.003 | tactic=credential harvesting | verify your account
+BENIGN? | risk=0.00 base=0.00 margin=+0.030 | tactic=credential harvesting | click link to verify login
+BENIGN? | risk=0.00 base=0.00 margin=-0.239 | tactic=credential harvesting | verify your email to complete registration
+OBFUSCATED | risk=0.35 base=0.00 margin=+0.015 | tactic=credential harvesting  [OBFUSCATION: 'acc0unt' -> account, char-substitution] | verify y0ur acc0unt immediately
+OBFUSCATED | risk=0.57 base=0.22 margin=+0.108 | tactic=security alert impersonation  [OBFUSCATION: 's e c u r i t y' -> security, letter-spacing] | s e c u r i t y alert act now
+CLEAN | risk=0.00 base=0.00 margin=+0.043 | tactic=credential harvesting | our verification process is secure and fast

@@ -1,0 +1,6 @@
+{
+  "decision_threshold_phishing": 0.5,
+  "positive_class": "label=1 is legitimate",
+  "rule": "flag phishing when P(phishing) >= decision_threshold_phishing",
+  "note": "Extension MUST use the probability output + this threshold to match the reference model exactly."
+}

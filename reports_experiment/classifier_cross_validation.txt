@@ -1,0 +1,5 @@
+Trained Classifier (MiniLM + LogisticRegression) - 5-Fold CV
+=======================================================
+CV Accuracy: 0.8821
+CV F1: 0.8187
+CV ROC-AUC: 0.9499

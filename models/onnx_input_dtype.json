@@ -1,0 +1,4 @@
+{
+  "input_dtype": "float64",
+  "note": "Feed inference features as this dtype"
+}
