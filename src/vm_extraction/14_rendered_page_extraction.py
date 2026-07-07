@@ -68,11 +68,16 @@ from playwright.sync_api import sync_playwright
 
 BASE_DIR    = Path(__file__).resolve().parent.parent.parent
 PROCESSED   = BASE_DIR / "data" / "processed"
-INPUT_FILE  = PROCESSED / "fresh_features.csv"        # has url, label, source
+INPUT_FILE  = PROCESSED / "render_sample_urls.csv"     # stratified ~1000-row
+                                                        # sample, NOT the full
+                                                        # fresh_features.csv -
+                                                        # see 13_stratified_sample.py
 OUTPUT_FILE = PROCESSED / "rendered_page_features.csv"
 CHECKPOINT  = PROCESSED / "rendered_page_checkpoint.csv"
 
-MAX_WORKERS      = 8
+MAX_WORKERS      = 2   # reduced from 8 after VM memory crash (2 chromium
+                       # instances instead of 8 dramatically cuts RAM use;
+                       # slower but stable - correctness over speed here
 CHECKPOINT_EVERY = 250
 NAV_TIMEOUT_MS   = 10_000   # 10s hard cap on page navigation
 
