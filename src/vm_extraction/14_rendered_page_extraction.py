@@ -6,59 +6,56 @@ Extracts the "Rendered Page" feature category from Table 3.4:
   hidden_element_count, iframe_count, external_resource_ratio,
   favicon_domain_mismatch
 
-Adds these to your existing fresh_features.csv (URL-lexical/DNS/TLS/
-redirect features), producing the complete five-category feature set
-described in Chapter 3, Section 3.5.
+Reads the STRATIFIED SAMPLE (data/processed/render_sample_urls.csv,
+~1000 URLs) rather than the full dataset - see 13_stratified_sample.py
+and Box 1 (7 July 2026) for the documented rationale: rendering live
+pages is higher-risk than passive network requests, so this category
+is extracted on a representative subset and imputed elsewhere,
+extending the two-tier feature-availability principle in Chapter 3
+Section 3.4.2 to a three-tier structure.
 
-DUE-DILIGENCE FIXES applied before first real run (1 July 2026):
-  1. PERFORMANCE: original design launched a new browser PER URL
-     (~0.63s overhead each). Empirically measured 3.5x speedup by
-     launching ONE browser per worker thread, reused across that
-     thread's whole batch via fresh contexts per URL. Confirmed
-     stable under concurrent load (20/20, then 40/40 test runs, 0 errors).
-  2. CORRECTNESS: domain-comparison logic (external_resource_ratio,
-     favicon_domain_mismatch) now uses page.url (the FINAL URL after
-     any redirects) instead of the original pre-navigation URL.
-     Phishing pages redirect constantly; comparing against the wrong
-     domain would silently misjudge these two features on any
-     redirecting page.
-  3. COMPLETENESS: external_resource_ratio now also counts stylesheets
-     (link[rel=stylesheet]), not just images/scripts.
-  4. SCOPE CORRECTION: earlier informal explanation mentioned "social
-     media links", "copyright notices", "popup count" as example
-     rendered-page signals - these are NOT in Chapter 3 Table 3.4 and
-     are NOT built here. Only the six features actually specified are
-     extracted: num_forms, has_password_field, num_password_fields,
-     hidden_element_count, iframe_count, external_resource_ratio,
-     favicon_domain_mismatch.
+DUE-DILIGENCE FIXES (1 July 2026, before first real run):
+  1. PERFORMANCE: one browser launched per WORKER THREAD (reused across
+     that thread's batch), not per URL - ~3.5x faster, verified empirically.
+  2. CORRECTNESS: domain comparisons use page.url (final URL after any
+     redirects), not the pre-navigation URL.
+  3. COMPLETENESS: external_resource_ratio also counts stylesheets.
+
+REAL-TIME PROGRESS + CRASH-RESILIENCE FIX (7 July 2026, after first
+live run showed OVER AN HOUR with zero progress output despite working
+correctly):
+  Root cause: with MAX_WORKERS=2, URLs were split into only 2 chunks of
+  ~500 each, and results were only returned (and progress printed) once
+  an ENTIRE chunk of 500 pages finished - meaning both visibility AND
+  checkpoint durability were bad: a crash mid-chunk would have lost up
+  to 500 completed extractions with nothing saved.
+  Fixed by streaming each completed URL's result through a thread-safe
+  queue THE MOMENT it finishes, regardless of which worker/chunk it
+  belongs to. The main thread consumes the queue continuously, printing
+  progress and checkpointing every 25 URLs - not every 500. This gives
+  real-time visibility and much finer crash-recovery granularity.
 
 SAFETY / ETHICS (matches Section 3.9 exactly):
   - One-hop, passive fetch only. Does NOT follow links, does NOT submit
     forms, does NOT interact with login/payment fields.
-  - Runs inside this isolated VM only - never run this on your main
-    Windows machine, since it visits live, unverified phishing URLs.
+  - Runs inside this isolated VM only.
   - Page content is discarded immediately after feature extraction;
-    only the numeric feature vector is retained (no raw HTML/text kept).
-
-LESSONS APPLIED FROM EARLIER SESSION (the WHOIS 6-hour hang):
-  - Hard per-page timeout (10s navigation)
-  - Checkpoint every 250 rows - a crash loses at most 250 rows, not everything
-  - Concurrent processing, but modest (8 worker threads)
+    only the numeric feature vector is retained.
 
 Requirements (install inside the VM):
-    pip install playwright pandas --break-system-packages
+    pip install playwright pandas
     playwright install chromium
-    playwright install-deps chromium   # installs OS-level dependencies
+    sudo playwright install-deps chromium
 
 Usage:
     python3 14_rendered_page_extraction.py
 
 Outputs:
     data/processed/rendered_page_features.csv
-    (merge into fresh_features.csv with the follow-up merge script)
 """
 
 import time
+import queue
 from pathlib import Path
 from urllib.parse import urlparse
 from concurrent.futures import ThreadPoolExecutor
@@ -68,18 +65,13 @@ from playwright.sync_api import sync_playwright
 
 BASE_DIR    = Path(__file__).resolve().parent.parent.parent
 PROCESSED   = BASE_DIR / "data" / "processed"
-INPUT_FILE  = PROCESSED / "render_sample_urls.csv"     # stratified ~1000-row
-                                                        # sample, NOT the full
-                                                        # fresh_features.csv -
-                                                        # see 13_stratified_sample.py
+INPUT_FILE  = PROCESSED / "render_sample_urls.csv"
 OUTPUT_FILE = PROCESSED / "rendered_page_features.csv"
 CHECKPOINT  = PROCESSED / "rendered_page_checkpoint.csv"
 
-MAX_WORKERS      = 2   # reduced from 8 after VM memory crash (2 chromium
-                       # instances instead of 8 dramatically cuts RAM use;
-                       # slower but stable - correctness over speed here
-CHECKPOINT_EVERY = 250
-NAV_TIMEOUT_MS   = 10_000   # 10s hard cap on page navigation
+MAX_WORKERS      = 2
+CHECKPOINT_EVERY = 25     # every 25 URLs now, not every 500
+NAV_TIMEOUT_MS   = 10_000
 
 EMPTY_FEATURES = {
     "num_forms": None, "has_password_field": None,
@@ -90,8 +82,6 @@ EMPTY_FEATURES = {
 
 
 def extract_rendered_features(page) -> dict:
-    """Extract Table 3.4 'Rendered Page' features from an already-loaded page.
-    Uses page.url (final URL after redirects), not the pre-navigation URL."""
     page_domain = urlparse(page.url).netloc
 
     num_forms = page.eval_on_selector_all("form", "els => els.length")
@@ -130,13 +120,11 @@ def extract_rendered_features(page) -> dict:
     }
 
 
-def process_url_batch(urls_chunk: list) -> list:
-    """One browser launched ONCE per worker thread, reused across this
-    thread's whole batch via fresh contexts per URL. Never shared across
-    threads - each sync_playwright()/browser stays local to the thread
-    that created it (confirmed safe AND ~3.5x faster than relaunching a
-    browser per URL, verified empirically before this script was used)."""
-    results = []
+def process_url_batch(urls_chunk: list, results_queue: queue.Queue):
+    """One browser per worker thread, reused across the batch. Streams
+    each completed result to results_queue IMMEDIATELY (not at the end
+    of the whole chunk) - fixes both progress visibility and crash
+    durability, confirmed via live testing before this version shipped."""
     with sync_playwright() as p:
         browser = p.chromium.launch(
             args=["--disable-gpu", "--no-sandbox", "--disable-dev-shm-usage"]
@@ -155,9 +143,8 @@ def process_url_batch(urls_chunk: list) -> list:
                 context.close()
             except Exception:
                 result.update(EMPTY_FEATURES)
-            results.append(result)
+            results_queue.put(result)
         browser.close()
-    return results
 
 
 def main():
@@ -183,31 +170,39 @@ def main():
     if not todo:
         print("Nothing left to process.")
     else:
-        # Split URLs into MAX_WORKERS chunks - one browser launched per chunk
         chunks = [todo[i::MAX_WORKERS] for i in range(MAX_WORKERS)]
-        print(f"Split into {len(chunks)} chunks (~{len(todo)//MAX_WORKERS} URLs each)\n")
+        print(f"Split into {len(chunks)} chunks (~{len(todo)//MAX_WORKERS} URLs each)")
+        print(f"Progress prints every URL now (not every {500} - fixed after "
+              f"the silent-hour issue). Checkpoints every {CHECKPOINT_EVERY} URLs.\n")
 
+        results_queue = queue.Queue()
         t0 = time.time()
         processed = 0
         errors = 0
 
         with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-            for chunk_results in executor.map(process_url_batch, chunks):
-                for r in chunk_results:
-                    results.append(r)
-                    processed += 1
-                    if r.get("render_error"):
-                        errors += 1
+            futures = [executor.submit(process_url_batch, chunk, results_queue)
+                       for chunk in chunks]
+
+            while processed < len(todo):
+                r = results_queue.get()   # blocks until next result is ready
+                results.append(r)
+                processed += 1
+                if r.get("render_error"):
+                    errors += 1
 
                 elapsed = time.time() - t0
                 rate = processed / elapsed if elapsed > 0 else 0
                 eta = (len(todo) - processed) / rate / 60 if rate > 0 else 0
                 print(f"  [{processed:>5}/{len(todo):>5}] errors={errors} "
-                      f"rate={rate:.1f}/s ETA={eta:.1f}min")
+                      f"rate={rate:.2f}/s ETA={eta:.1f}min")
 
-                if processed % CHECKPOINT_EVERY < len(chunk_results):
+                if processed % CHECKPOINT_EVERY == 0:
                     pd.DataFrame(results).to_csv(CHECKPOINT, index=False)
                     print(f"  Checkpoint saved ({len(results):,} rows)")
+
+            for f in futures:
+                f.result()  # surface any worker-thread exceptions
 
     out_df = pd.DataFrame(results)
     out_df.to_csv(OUTPUT_FILE, index=False)
