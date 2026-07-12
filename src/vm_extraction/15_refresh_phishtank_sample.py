@@ -177,6 +177,25 @@ def main():
         "label": 0,
         "source": "phishtank",
     })
+    # Carry verification_time AND submission_time through for later timing
+    # analysis: submission_time = when someone first reported the URL to
+    # PhishTank; verification_time = when PhishTank confirmed it was a
+    # real, live phish; processed_at (recorded in 14_rendered_page_
+    # extraction.py) = when OUR VM actually attempted to render it.
+    # The gaps between these three tell you how long the phishing site
+    # survived from report -> confirmation -> our visit.
+    for time_col in ["verification_time", "submission_time"]:
+        if time_col in feed.columns:
+            col_map = feed.set_index("url")[time_col].to_dict()
+            fresh_phishtank[time_col] = fresh_phishtank["url"].map(col_map)
+        else:
+            fresh_phishtank[time_col] = None
+            print(f"  WARNING: '{time_col}' column not found in feed - "
+                  f"that part of the timing analysis will not be possible.")
+
+    for time_col in ["verification_time", "submission_time"]:
+        if time_col not in tranco_rows.columns:
+            tranco_rows[time_col] = None  # not applicable - legitimate sites
 
     updated_sample = pd.concat([fresh_phishtank, tranco_rows], ignore_index=True)
     updated_sample.to_csv(SAMPLE_FILE, index=False)
