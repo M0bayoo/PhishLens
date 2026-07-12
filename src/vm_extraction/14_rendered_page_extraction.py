@@ -56,6 +56,7 @@ Outputs:
 
 import time
 import queue
+import datetime
 from pathlib import Path
 from urllib.parse import urlparse
 from concurrent.futures import ThreadPoolExecutor
@@ -121,16 +122,34 @@ def extract_rendered_features(page) -> dict:
 
 
 def process_url_batch(urls_chunk: list, results_queue: queue.Queue):
-    """One browser per worker thread, reused across the batch. Streams
-    each completed result to results_queue IMMEDIATELY (not at the end
-    of the whole chunk) - fixes both progress visibility and crash
-    durability, confirmed via live testing before this version shipped."""
-    with sync_playwright() as p:
-        browser = p.chromium.launch(
+    """One browser per worker thread, PERIODICALLY RESTARTED every
+    BROWSER_RESTART_EVERY URLs (not kept alive for the whole batch).
+
+    FIX (12 July 2026): the live run showed a steady, monotonic decline
+    in both success rate and processing speed over ~325 URLs (0.65/s ->
+    0.26/s, errors climbing continuously) - the classic signature of a
+    memory/resource leak inside a long-lived Chromium process, not a
+    network problem (confirmed Google still loaded fine mid-run, ruling
+    out a full network/VPN block). This matches the same underlying
+    mechanism as the earlier OOM crash. Restarting the browser
+    periodically bounds any leak's growth instead of letting it
+    accumulate across an entire 350-750 URL batch."""
+    BROWSER_RESTART_EVERY = 50
+
+    def launch_browser(p):
+        return p.chromium.launch(
             args=["--disable-gpu", "--no-sandbox", "--disable-dev-shm-usage"]
         )
-        for url in urls_chunk:
+
+    with sync_playwright() as p:
+        browser = launch_browser(p)
+        for i, url in enumerate(urls_chunk):
+            if i > 0 and i % BROWSER_RESTART_EVERY == 0:
+                browser.close()
+                browser = launch_browser(p)
+
             result = {"url": url}
+            result["processed_at"] = datetime.datetime.utcnow().isoformat()
             try:
                 context = browser.new_context(
                     user_agent="Mozilla/5.0 (PhishLens Research Bot; one-hop passive fetch)",
