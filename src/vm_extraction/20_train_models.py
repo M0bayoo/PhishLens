@@ -1,5 +1,12 @@
 """
-PhishLens - Train Models A and B (Random Forest)
+PhishLens - Train Models A and B (Random Forest) - v2
+==================================================================
+LABEL CONVENTION (from 03_merge_pipeline.py, inherited from PhiUSIIL):
+    label == 0  ->  PHISHING
+    label == 1  ->  LEGITIMATE
+Internally this script maps y = (label == 0) so that the POSITIVE
+class in every metric below is PHISHING. All precision/recall/FPR/FNR
+figures therefore read as phishing-detection performance.
 ==================================================================
 Model A : URL/DNS/TLS features, all 11,269 rows
 Model A-: leakage check - Model A WITHOUT liveness features
@@ -97,7 +104,8 @@ def prepare(df: pd.DataFrame):
         log("Missing values filled with -1 sentinel:")
         log(miss.to_string())
     X = X.fillna(-1)
-    return X, df["label"].astype(int), df["url"].map(registered_domain)
+    y_phish = (df["label"] == 0).astype(int)  # positive class = PHISHING
+    return X, y_phish, df["url"].map(registered_domain)
 
 
 def train_eval(name, X, y, groups, drop_cols=None):
@@ -110,8 +118,10 @@ def train_eval(name, X, y, groups, drop_cols=None):
 
     log(f"\n{'='*66}\n{name}\n{'='*66}")
     log(f"Features: {X.shape[1]} | Train: {len(Xtr):,} | Test: {len(Xte):,}")
-    log(f"Train balance: {ytr.value_counts().to_dict()} | "
-        f"Test balance: {yte.value_counts().to_dict()}")
+    def _bal(s):
+        d = s.value_counts().to_dict()
+        return f"phishing={d.get(1,0)}, legit={d.get(0,0)}"
+    log(f"Train balance: {_bal(ytr)} | Test balance: {_bal(yte)}")
 
     clf = RandomForestClassifier(
         n_estimators=300, class_weight="balanced",
@@ -121,13 +131,15 @@ def train_eval(name, X, y, groups, drop_cols=None):
     pred = clf.predict(Xte)
     proba = clf.predict_proba(Xte)[:, 1]
     tn, fp, fn, tp = confusion_matrix(yte, pred).ravel()
+    log("(positive class = PHISHING)")
     log(f"Accuracy : {accuracy_score(yte, pred):.4f}")
     log(f"Precision: {precision_score(yte, pred):.4f}")
     log(f"Recall   : {recall_score(yte, pred):.4f}")
     log(f"F1       : {f1_score(yte, pred):.4f}")
     log(f"AUC-ROC  : {roc_auc_score(yte, proba):.4f}")
     log(f"FPR      : {fp/(fp+tn):.4f}   FNR: {fn/(fn+tp):.4f}")
-    log(f"Confusion: TN={tn} FP={fp} FN={fn} TP={tp}")
+    log(f"Confusion: TN(legit ok)={tn} FP(legit flagged)={fp} "
+        f"FN(phish missed)={fn} TP(phish caught)={tp}")
 
     imp = (pd.Series(clf.feature_importances_, index=X.columns)
              .sort_values(ascending=False).head(15))
