@@ -1,0 +1,14 @@
+﻿{
+  "manifest_version": 3,
+  "name": "PhishLens",
+  "version": "0.1.0",
+  "description": "On-device phishing URL detection (dissertation prototype). All scoring is local; no data leaves the browser.",
+  "permissions": ["tabs"],
+  "background": { "service_worker": "background.js" },
+  "action": { "default_popup": "popup.html", "default_title": "PhishLens" },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
+  }
+}
+
+
