@@ -8,6 +8,9 @@ data/raw/*.csv
 data/raw/*.json
 data/raw/*.zip
 data/processed/*.csv
+# Exception: harvested deep links are small (49 KB) and cannot be
+# regenerated deterministically, so they are tracked for reproducibility
+!data/processed/tranco_deeplinks.csv
 
 # Models can be large
 models/*.onnx
