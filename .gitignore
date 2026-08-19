@@ -24,3 +24,11 @@ models/*.joblib
 
 .env
 .DS_Store
+
+# PhishLens v2 build
+PhishLens v2/venv/
+PhishLens v2/__pycache__/
+PhishLens v2/data/raw/
+PhishLens v2/data/processed/*.csv
+!PhishLens v2/data/processed/tranco_deeplinks.csv
+PhishLens v2/models/*.joblib

@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "PhishLens",
+  "version": "0.2.0",
+  "description": "On-device two-stage phishing detection: URL lexical gate + page brand-consistency. All scoring is local; no data leaves the browser.",
+  "permissions": ["tabs", "activeTab", "scripting"],
+  "host_permissions": ["http://*/*", "https://*/*"],
+  "background": { "service_worker": "background.js" },
+  "action": { "default_popup": "popup.html", "default_title": "PhishLens" },
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
