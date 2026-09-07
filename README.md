@@ -1,60 +1,49 @@
 # PhishLens
 
-A real-time phishing detection Chrome extension using a two-phase hybrid
-pipeline (semantic language model + structural Random Forest classifier),
-with SHAP-based explainability, a dual-mode (simple/expert) verdict
-interface, and an optional active-blocking confirmation gate.
+A zero-friction Chrome extension that detects phishing pages in real time, entirely
+on-device. Built as an MSc dissertation project.
 
-MSc Dissertation Project — Leeds Beckett University (CRN-19236)
-Author: John Oluwatobi Ogunbayo (C77628782)
+PhishLens uses a two-phase pipeline: a lightweight structural classifier scores every
+URL the moment a page loads, and a content-based check reads the live page to confirm
+or override that score when brand identity is uncertain. No page content, URL, or
+browsing history ever leaves the device.
 
-## Project Structure
+**MSc Dissertation Project — Leeds Beckett University**
+Author: John Oluwatobi Ogunbayo
 
-```
-PhishLens/
-├── data/
-│   ├── raw/            # Raw downloaded datasets (not committed — see .gitignore)
-│   └── processed/       # Cleaned, merged, feature-extracted datasets
-├── src/
-│   ├── data_collection/ # Scripts to download and explore PhiUSIIL, PhishTank, Tranco
-│   └── feature_extraction/ # Modular feature extraction pipeline (5 categories)
-├── notebooks/           # Exploratory analysis notebooks
-├── models/               # Trained models (ONNX exports — not committed)
-├── docs/                 # Methodology and supporting documentation
-└── requirements.txt
-```
+## How it works
 
-## Dataset Sources
+- **Phase 1 (structural):** A Random Forest trained on 34
+  lexical and structural URL features, compiled directly to dependency-free
+  JavaScript — no ONNX, no external ML runtime. Runs in under a millisecond.
+- **Phase 2 (content):** For URLs Phase 1 can't confidently resolve, a content
+  script reads the loaded page's computed style (not raw HTML) and checks it
+  against a 2,013-entry brand dictionary for identity mismatches and
+  credential-harvesting forms.
+- **Verdict:** A single popup shows Green / Amber / Red with the reasoning behind
+  it — no separate technical mode.
+
+## Project structure
+
+PhishLens-Extension/
+├── manifest.json
+├── background.js # gate() and fuse() decision logic
+├── content.js # Phase 2 page-content check
+├── popup.html / popup.js # verdict display
+└── model/
+├── forest_model_e.json
+└── brands.json
+
+
+## Dataset sources
 
 | Source | Type | Role |
 |---|---|---|
-| PhiUSIIL | Phishing + Legitimate | Historical base (235,795 URLs, ~56 pre-extracted features) |
-| PhishTank | Phishing only | Recent verified phishing URLs (live API) |
-| Tranco Top 1M | Legitimate only | Recent diverse legitimate URLs (weekly list) |
+| PhiUSIIL | Phishing + Legitimate | Historical labelled base |
+| PhishTank | Phishing only | Live, recently verified phishing URLs |
+| Tranco Top 1M | Legitimate only | Diverse legitimate domains, weekly refresh |
 
 ## Setup
 
-```bash
 python3 -m venv venv
-source venv/bin/activate      # On Windows: venv\Scripts\activate
-pip install -r requirements.txt
-```
-
-## Pipeline Stages
-
-1. **Data Collection** (`src/data_collection/`)
-   - `01_download_data.py` — downloads all three sources
-   - `02_explore_data.py` — inspects schema, row counts, label balance
-
-2. **Feature Extraction** (`src/feature_extraction/`) — *in progress*
-   - URL-lexical features
-   - Host/DNS features
-   - TLS certificate features
-   - Rendered page features
-   - Behavioural (redirect depth) features
-
-3. **Model Training** — *planned*
-4. **Score Fusion & SHAP** — *planned*
-5. **Chrome Extension** — *planned*
-
-See `docs/` for the full methodology document.
+source venv/bin/activate # Windows: venv\Scripts\activate
