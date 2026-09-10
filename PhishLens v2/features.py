@@ -1,15 +1,15 @@
 # Lexical and structural feature extraction for PhishLens.
-# Converts a URL into a 34-dimensional feature vector, computable from the
-# URL string alone with no network access. Imported by 04_train_model.py.
+# Converts a URL into a 34-dimensional feature vector, imported by 04_train_model.py.
 
+
+#regular express,how many charcters library etc
 import re
 import math
 from urllib.parse import urlparse
 from collections import Counter
 
 
-# Known brands mapped to the domains they legitimately own. Used both to
-# recognise genuine brand traffic and to detect impersonation of it.
+# Known brands mapped to the domains they legitimately own. Used both to recognise genuine brand traffic and to detect impersonation of it.
 BRANDS = {
  'paypal':['paypal.com','paypal.co.uk','paypal.me'],
  'amazon':['amazon.com','amazon.co.uk','amazon.de','amazon.fr','amazon.it','amazon.es',
@@ -42,8 +42,7 @@ REAL_BRAND_DOMAINS = []
 for domain_list in BRANDS.values():
     REAL_BRAND_DOMAINS.extend(domain_list)
 
-# Platforms hosting user-published content on a shared domain. The
-# registered domain therefore carries no reputation signal either way.
+# Platforms hosting user-published content on a shared domain. 
 FREE_HOSTING = ('github.io','netlify.app','wixsite.com','wixstudio.com','firebaseapp.com',
  'herokuapp.com','vercel.app','pages.dev','weebly.com','glitch.me','amazonaws.com',
  'cloudfront.net','googleusercontent.com','windows.net','web.app','workers.dev','r2.dev',
@@ -62,21 +61,19 @@ USER_CONTENT_HOSTS = (
     'onedrive.live.com', '1drv.ms', 'sharepoint.com', 'forms.office.com',
     'notion.site', 'canva.site', 'figma.site')
 
-# Top-level domains disproportionately represented in phishing corpora,
-# generally those available cheaply and with minimal registration checks.
+# Top-level domains that are highly represented in phishing
 HIGH_RISK_TLD = {'buzz','top','cfd','sbs','xyz','tk','ml','ga','cf','gq','icu','click','link',
                  'work','rest','fit','loan','date','racing','win','bid','stream','download',
                  'pro','online','site','website','space','store','shop','life','world'}
 
 MED_RISK_TLD = {'info','biz','us','cc','me','io','app','dev','page','one','today','digital','live'}
 
-# Public suffixes spanning two labels, where the registered domain is the
-# final three labels rather than the final two (bbc.co.uk, not co.uk).
+# Public suffixes spanning two labels
 TWO_PART_ENDINGS = ('co.uk','org.uk','ac.uk','gov.uk','net.uk','com.br','com.au','co.jp','co.nz',
  'com.tr','co.in','com.mx','com.ar','co.za','com.pl','net.au','org.au','co.id','com.sg',
  'com.vn','co.kr','com.cn','co.il','com.hk','com.tw','co.th','com.my','co.ke')
 
-# Terms characteristic of credential-harvesting and payment-fraud lures.
+# Word terms characteristic of credential-harvesting and payment-fraud.
 SCAM_WORDS = ('login','signin','verify','secure','account','update','confirm',
               'bank','paypal','password','webscr','wallet')
 

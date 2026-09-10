@@ -1,22 +1,4 @@
-# Harvests real legitimate deep-link URLs from live Tranco-ranked websites.
-#
-# The source datasets are biased: Tranco supplies bare homepages (0% have a
-# path) while live PhishTank URLs are 67.8% deep links. A model trained on
-# this alone learns "has a path -> phishing", a dataset-construction
-# artefact that misclassifies ordinary legitimate deep links in deployment.
-# This step supplies the missing class of examples.
-#
-# A desktop Chrome user-agent string is used because commercial bot
-# protection on legitimate sites suppresses content served to
-# self-identified automated clients, which would bias collection toward
-# unprotected sites. One-hop passive fetch only; no link-following and no
-# form submission.
-#
-# A high skip rate is expected. Tranco ranks domains by DNS traffic, so its
-# upper ranks contain CDN, DNS and ad-infrastructure hosts that serve no
-# browsable page in any browser. Around 600-800 harvested links is
-# sufficient: the goal is that "has a path" ceases to be a perfect class
-# separator, not parity with the phishing deep-link count.
+
 
 import pandas as pd
 import random
